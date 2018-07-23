@@ -184,7 +184,7 @@
 
   <!--this is the naming policy for artifacts we want pulled down-->
   <property name="ivy.artifact.retrieve.pattern"
-      value="${name}/[conf]/[artifact]-[revision](-[classifier]).[ext]"/>
+      value="${name}/[conf]/[artifact]-[type]-[revision](-[classifier]).[ext]"/>
 
   <!--test related properties -->
   <property name="sqoop.test.oracle.connectstring" value="jdbc:oracle:thin:@//localhost/xe"/>

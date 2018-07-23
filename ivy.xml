@@ -114,6 +114,12 @@ under the License.
       <exclude org="com.twitter" module="parquet-hive-bundle"/>
       <exclude org="org.apache.avro" module="avro" />
     </dependency>
+    <dependency org="org.kitesdk" name="kite-data-core" rev="${kite-data.version}"
+      conf="common->default;redist->default">
+      <artifact name="kite-data-core" type="jar"/>
+      <exclude org="org.apache.avro" module="avro" />
+      <exclude org="com.twitter" module="parquet-avro"/>
+    </dependency>
 
     <!-- dependencies for static analysis -->
     <dependency org="checkstyle" name="checkstyle" rev="${checkstyle.version}"
@@ -195,6 +201,11 @@ under the License.
       rev="${hcatalog.version}" conf="common->default">
       <artifact name="hive-hcatalog-core" type="jar"/>
       <exclude org="org.apache.avro" module="avro" />
+    </dependency>
+
+    <dependency org="org.apache.hive" name="hive-exec"
+      rev="${hcatalog.version}" conf="common->default">
+      <artifact name="hive-exec" type="jar"/>
     </dependency>
 
     <dependency org="org.postgresql" name="postgresql"
