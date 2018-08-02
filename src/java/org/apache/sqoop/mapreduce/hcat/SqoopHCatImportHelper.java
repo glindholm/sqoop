@@ -388,6 +388,10 @@ public class SqoopHCatImportHelper {
   }
 
   private Object convertNumberTypes(Object val, HCatFieldSchema hfs) {
+      return convertNumberTypes(bigDecimalFormatString, val, hfs);
+  }
+  
+  static Object convertNumberTypes(boolean bigDecimalFormatString, Object val, HCatFieldSchema hfs) {
     HCatFieldSchema.Type hfsType = hfs.getType();
 
     if (!(val instanceof Number)) {
