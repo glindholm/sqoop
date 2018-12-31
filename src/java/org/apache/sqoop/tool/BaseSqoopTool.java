@@ -100,6 +100,7 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
   public static final String INPUT_NULL_NON_STRING = "input-null-non-string";
   public static final String MAP_COLUMN_JAVA = "map-column-java";
   public static final String MAP_COLUMN_HIVE = "map-column-hive";
+  public static final String MAP_TYPE_HCAT = "map-type-hcat";
 
   public static final String FMT_SEQUENCEFILE_ARG = "as-sequencefile";
   public static final String FMT_TEXTFILE_ARG = "as-textfile";
@@ -640,6 +641,11 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
         + " types.")
       .withLongOpt(MAP_COLUMN_HIVE)
       .create());
+    hCatOptions.addOption(OptionBuilder
+        .hasArg()
+        .withDescription("Override default column type mapping to hive types.")
+        .withLongOpt(MAP_TYPE_HCAT)
+        .create());
     hCatOptions.addOption(OptionBuilder.withArgName("partition-key")
       .hasArg()
       .withDescription("Sets the partition keys to use when importing to hive")
@@ -1273,6 +1279,10 @@ public abstract class BaseSqoopTool extends com.cloudera.sqoop.tool.SqoopTool {
 
     if (in.hasOption(MAP_COLUMN_HIVE)) {
       out.setMapColumnHive(in.getOptionValue(MAP_COLUMN_HIVE));
+    }
+
+    if (in.hasOption(MAP_TYPE_HCAT)) {
+      out.setMapTypeHCat(in.getOptionValue(MAP_TYPE_HCAT));
     }
 
   }

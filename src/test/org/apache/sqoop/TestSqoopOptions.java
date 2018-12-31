@@ -18,11 +18,14 @@
 
 package org.apache.sqoop;
 
+import java.util.Map;
 import java.util.Properties;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestSqoopOptions {
 
@@ -50,4 +53,57 @@ public class TestSqoopOptions {
     opts.setColumns(null);
     assertEquals(null, opts.getColumnNameCaseInsensitive("noColumns"));
   }
+  
+  @Test
+  public void testParseMapTypeHCat() {
+      
+    Map<String, String> map = SqoopOptions.parseMapTypeHCat("Timestamp(26,6)=TIMESTAMP,Date=Xyz(7,2),Time(8)=Time(8,0)");
+    //System.out.println(map.toString());
+    assertEquals(3, map.size());
+    assertEquals("TIMESTAMP", map.get("(93,26,6)"));
+    assertEquals("Xyz(7,2)", map.get("(91)"));
+    assertEquals("Time(8,0)", map.get("(92,8)"));  
+  }
+  
+  @Test
+  public void testParseMapTypeHCatErrors() {
+    
+    // Malformed map
+    try {
+      SqoopOptions.parseMapTypeHCat("x,y,z");
+      fail("Malformed map");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("Malformed"));
+    }
+    
+    // Invalid sql type format
+    try {
+      SqoopOptions.parseMapTypeHCat("time(*)=time");
+      fail("Invalid sql type");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("Invalid"));
+    }
+    
+    // Unrecognized sql type
+    try {
+      SqoopOptions.parseMapTypeHCat("XXX=time");
+      fail("Unrecognized sql type");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.getMessage().contains("Unrecognized"));
+    }
+  }
+
+  @Test
+  public void testLookupMapTypeHive() {
+    SqoopOptions opts = new SqoopOptions();
+    opts.setMapTypeHCat("Timestamp(26,6)=TIMESTAMP,Date=Xyz(7,2),Time(8)=Time(8,0),TIME=TIME");
+    
+    assertEquals("TIMESTAMP", opts.lookupMapTypeHCat(93, 26, 6));
+    assertEquals("Xyz(7,2)", opts.lookupMapTypeHCat(91, 0, 0));
+    assertEquals("Time(8,0)", opts.lookupMapTypeHCat(92, 8, 0));
+    assertEquals("TIME", opts.lookupMapTypeHCat(92, 0, 0));
+  
+    assertEquals(null, opts.lookupMapTypeHCat(99999, 0, 0));
+  }
+  
 }

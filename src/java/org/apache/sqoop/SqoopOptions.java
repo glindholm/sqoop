@@ -26,14 +26,19 @@ import java.net.URLDecoder;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.sqoop.accumulo.AccumuloConstants;
+import org.apache.sqoop.mapreduce.hcat.SqoopHCatUtilities;
 import org.apache.sqoop.mapreduce.mainframe.MainframeConfiguration;
 import org.apache.sqoop.tool.BaseSqoopTool;
 import org.apache.sqoop.util.CredentialsUtil;
@@ -1375,6 +1380,97 @@ public class SqoopOptions implements Cloneable {
   public Properties getMapColumnJava() {
     return mapColumnJava;
   }
+  
+  /**
+   * Map for option --map-type-hcat.
+   * The Key is the sql type, precision, and scale formated as "({type}[,{precision}[,{scale}]])" 
+   * where type is the java.sql.Types integer and precision and scale are optional.
+   * The Value is the fully formatted HCat type string.
+   */
+  private Map<String, String> mapTypeHCat;
+  /**
+   * @param mapping
+   *          map of sql types to HCat types.
+   *          type[(precision[,scale])]=type[(precision[,scale])],+
+   *          The sql types must be standard SQL types that are named the same as the java.sql.Types constants.
+   */
+  public void setMapTypeHCat(String mapping) {
+    mapTypeHCat = parseMapTypeHCat(mapping);
+  }
+  
+  static Map<String, String> parseMapTypeHCat(String mapping)
+  {
+    try {
+      mapping =  URLDecoder.decode(mapping, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalArgumentException("Encoding not supported. --map-type-hcat should be UTF-8 encoding.");
+    }
+    
+    Map<String, String> jdbcTypeMap = new HashMap<>();
+
+    // type[(precision[,scale])]
+    Pattern sqlTypePattern = Pattern.compile("(?<type>[A-Z][A-Z_]+)(\\((?<precision>[0-9]+)(,(?<scale>[0-9]+))?\\))?");
+    
+    // replace the ',' in (xx,xx) with (xx#xx), so that we can just split by "," 
+    String[] maps = mapping.replaceAll("\\(([0-9]+),([0-9]+)\\)", "($1#$2)").split(",");
+
+    for (String one : maps) {
+      String[] details = one.replaceAll("\\(([0-9]+)#([0-9]+)\\)", "($1,$2)").split("="); // Restore ','s and split
+      if (details.length != 2) {
+        throw new IllegalArgumentException(
+            "Malformed mapping. --map-type-hcat mapping should be the form key=value[,key=value]*");
+      }
+
+      String sqlType = details[0];
+      String type = details[1];
+            
+      Matcher m = sqlTypePattern.matcher(sqlType.toUpperCase());
+      if (!m.matches()) {
+        throw new IllegalArgumentException("Invalid --map-type-hcat SQL type: " + sqlType);
+      }
+      
+      int sqlTypeInt = SqoopHCatUtilities.sqlTypeToInt(m.group("type"));
+      String precision = m.group("precision");
+      String scale = m.group("scale");
+
+      if (scale != null) {
+        jdbcTypeMap.put(String.format("(%d,%s,%s)", sqlTypeInt, precision, scale), type);
+      }
+      else if (precision != null) {
+        jdbcTypeMap.put(String.format("(%d,%s)", sqlTypeInt, precision), type);        
+      }
+      else {
+        jdbcTypeMap.put(String.format("(%d)", sqlTypeInt), type);                
+      }
+    }
+
+    return jdbcTypeMap;
+  }
+  
+  /**
+   * Lookup the HCat type in the --map-type-hcat mappings.
+   * 
+   * @param sqltype the java.sql.Type type
+   * @param precision the precision
+   * @param scale the scale
+   * @return the HCat type string or null if type isn't mapped
+   */
+  public String lookupMapTypeHCat(int sqltype, int precision, int scale) {
+    if (mapTypeHCat == null) {
+      return null;
+    }
+    
+    String type = mapTypeHCat.get(String.format("(%d,%d,%d)", sqltype, precision, scale));
+    if (type == null) {
+      type = mapTypeHCat.get(String.format("(%d,%d)", sqltype, precision));
+    }
+    if (type == null) {
+      type = mapTypeHCat.get(String.format("(%d)", sqltype));
+    }
+    return type;
+  }
+  
+ 
 
   /**
    * Allow the user to enter his password on the console without printing

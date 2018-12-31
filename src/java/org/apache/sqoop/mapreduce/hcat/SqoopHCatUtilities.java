@@ -614,6 +614,11 @@ public final class SqoopHCatUtilities {
       int prec = -1;
       int scale = -1;
       if (type == null) {
+        type = options.lookupMapTypeHCat(dbColumnInfo.get(col).get(0), 
+            dbColumnInfo.get(col).get(1), 
+            dbColumnInfo.get(col).get(2));
+      }
+      if (type == null) {
         type = connManager.toHCatType(dbColumnInfo.get(col).get(0));
       }
       if (type.equals("char") || type.equals("varchar")) {
@@ -721,10 +726,14 @@ public final class SqoopHCatUtilities {
       String hCatColType = userHiveMapping.get(col);
       if (hCatColType == null) {
         LOG.debug("No user defined type mapping for HCatalog field " + col);
-        hCatColType = connManager.toHCatType(colInfo.get(0));
+        hCatColType = options.lookupMapTypeHCat(
+            colInfo.get(0), colInfo.get(1), colInfo.get(2));
       } else {
         LOG.debug("Found type mapping for HCatalog filed " + col);
         userMapped = true;
+      }
+      if (hCatColType == null) {
+        hCatColType = connManager.toHCatType(colInfo.get(0));
       }
       if (null == hCatColType) {
         throw new IOException("HCat does not support the SQL type for column "
@@ -1465,4 +1474,83 @@ public final class SqoopHCatUtilities {
         return "<UNKNOWN>";
     }
   }
+
+  public static int sqlTypeToInt(String type) {
+    switch(type){
+    case "ARRAY": 
+      return Types.ARRAY;
+    case "BIGINT": 
+      return Types.BIGINT;
+    case "BINARY": 
+      return Types.BINARY;
+    case "BIT": 
+      return Types.BIT;
+    case "BLOB": 
+      return Types.BLOB;
+    case "BOOLEAN": 
+      return Types.BOOLEAN;
+    case "CHAR": 
+      return Types.CHAR;
+    case "CLOB": 
+      return Types.CLOB;
+    case "DATALINK": 
+      return Types.DATALINK;
+    case "DATE": 
+      return Types.DATE;
+    case "DECIMAL": 
+      return Types.DECIMAL;
+    case "DISTINCT": 
+      return Types.DISTINCT;
+    case "DOUBLE": 
+      return Types.DOUBLE;
+    case "FLOAT": 
+      return Types.FLOAT;
+    case "INT": 
+    case "INTEGER": 
+      return Types.INTEGER;
+    case "JAVA_OBJECT": 
+      return Types.JAVA_OBJECT;
+    case "LONGNVARCHAR": 
+      return Types.LONGNVARCHAR;
+    case "LONGVARBINARY": 
+      return Types.LONGVARBINARY;
+    case "LONGVARCHAR": 
+      return Types.LONGVARCHAR;
+    case "NCHAR": 
+      return Types.NCHAR;
+    case "NCLOB": 
+      return Types.NCLOB;
+    case "NVARCHAR": 
+      return Types.NVARCHAR;
+    case "NULL": 
+      return Types.NULL;
+    case "NUMERIC": 
+      return Types.NUMERIC;
+    case "REAL": 
+      return Types.REAL;
+    case "REF": 
+      return Types.REF;
+    case "ROWID": 
+      return Types.ROWID;
+    case "SMALLINT": 
+      return Types.SMALLINT;
+    case "SQLXML": 
+      return Types.SQLXML;
+    case "STRUCT": 
+      return Types.STRUCT;
+    case "TIME": 
+      return Types.TIME;
+    case "TIMESTAMP": 
+      return Types.TIMESTAMP;
+    case "TINYINT": 
+      return Types.TINYINT;
+    case "VARBINARY": 
+      return Types.VARBINARY;
+    case "VARCHAR": 
+      return Types.VARCHAR;
+    }
+    
+    throw new IllegalArgumentException("Unrecognized SQL type:"+ type);
+  }
+
 }
